@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drawer Locator Search</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .search-container {
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      color: #ffffff;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 14px 18px;
+      font-size: 1rem;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background-color: #1e1e1e;
+      color: #fff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #00e676;
+    }
+
+    button {
+      padding: 14px 24px;
+      font-size: 1rem;
+      font-weight: 600;
+      background-color: #00e676;
+      color: #121212;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #00c853;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: #1e1e1e;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+      border: 1px solid #333;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: transparent;
+      color: #aaa;
+      font-size: 1.5rem;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .close-btn:hover {
+      color: #fff;
+      background: transparent;
+    }
+
+    .modal-title {
+      font-size: 1.4rem;
+      margin-bottom: 16px;
+      color: #00e676;
+      border-bottom: 1px solid #333;
+      padding-bottom: 10px;
+    }
+
+    .result-item {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border-left: 4px solid #00e676;
+    }
+
+    .result-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .result-header {
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .result-detail {
+      font-size: 0.95rem;
+      color: #bbb;
+      margin-bottom: 4px;
+    }
+
+    .location-badge {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 10px;
+      background: #00e676;
+      color: #121212;
+      font-weight: bold;
+      font-size: 0.85rem;
+      border-radius: 4px;
+    }
+
+    .no-results {
+      color: #ff5252;
+      text-align: center;
+      padding: 20px 0;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="search-container">
+    <h1>Drawer Inventory Search</h1>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Enter number, plate, or model..." autofocus>
+      <button onclick="handleSearch()">Search</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="resultsModal" onclick="closeModalOnOuterClick(event)">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal()">&times;</button>
+      <div class="modal-title">Search Results</div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // Embedded drawer inventory database
+    const inventoryData = [
+      { row: 1, col: 1, model: "FLEET HLX", plate: "NJE 3162", num: "3162" },
+      { row: 1, col: 2, model: "MSD HLX/CNQST", plate: "NJE 3347", num: "3347" },
+      { row: 1, col: 3, model: "WS HLX", plate: "NJE 3345", num: "3345" },
+      { row: 1, col: 4, model: "WS HLX", plate: "NJE 3342", num: "3342" },
+      { row: 1, col: 5, model: "NBO/WS HLX", plate: "NJE 3346", num: "3346" },
+      { row: 1, col: 6, model: "NETWORK HLX", plate: "NJE 3428", num: "3428" },
+      { row: 2, col: 1, model: "TS HLX", plate: "NJE 3340", num: "3340" },
+      { row: 2, col: 2, model: "WW HLX", plate: "NJE 3344", num: "3344" },
+      { row: 2, col: 3, model: "WW VIOS", plate: "NJE 3279", num: "3279" },
+      { row: 2, col: 4, model: "NETWROK VIOS", plate: "NJE 3277", num: "3277" },
+      { row: 2, col: 5, model: "SAFETY VIOS", plate: "NJE 3278", num: "3278" },
+      { row: 2, col: 6, model: "NBD VIOS", plate: "NJE 3424", num: "3424" },
+      { row: 3, col: 1, model: "KAM/BO VIOS", plate: "NJE 3426", num: "3426" },
+      { row: 3, col: 2, model: "BIN/BO VIOS", plate: "NJE 3165", num: "3165" },
+      { row: 3, col: 3, model: "CAB/BO VIOS", plate: "NJE 3425", num: "3425" },
+      { row: 3, col: 4, model: "SRBW/BO VIOS", plate: "NJE 3316", num: "3316" },
+      { row: 3, col: 5, model: "SRC/BO VIOS", plate: "NJE 3422", num: "3422" },
+      { row: 3, col: 6, model: "LAB AVANZA", plate: "NJE 3166", num: "3166" },
+      { row: 4, col: 1, model: "FLEET AVANZA", plate: "NJE 3171", num: "3171" },
+      { row: 4, col: 2, model: "PROJECT AVANZA", plate: "NJE 3172", num: "3172" },
+      { row: 4, col: 3, model: "BIN/BO AVANZA", plate: "NJE 3275", num: "3275" },
+      { row: 4, col: 4, model: "CAB/BO AVANZA", plate: "NJE 3317", num: "3317" },
+      { row: 4, col: 5, model: "SRBW/BO AVANZA", plate: "NJE 3274", num: "3274" },
+      { row: 4, col: 6, model: "SRC/BO AVANZA", plate: "NJE 3167", num: "3167" },
+      { row: 5, col: 1, model: "SRC/BO VIOS", plate: "NDG 4614", num: "4614" },
+      { row: 5, col: 2, model: "RMEA BRV", plate: "NIB 7746", num: "7746" },
+      { row: 5, col: 3, model: "PROJECT DMAX", plate: "NAU 9350", num: "9350" },
+      { row: 5, col: 4, model: "PROJECT DMAX", plate: "NAS 9745", num: "9745" },
+      { row: 5, col: 5, model: "FLEET DMAX", plate: "NAS 9742", num: "9742" },
+      { row: 5, col: 6, model: "MSD DMAX", plate: "NAS 9743", num: "9743" },
+      { row: 6, col: 1, model: "RAM/BO VIOS", plate: "NBV 4813", num: "4813" },
+      { row: 6, col: 2, model: "DIR/BO VIOS", plate: "NAP 9321", num: "9321" },
+      { row: 6, col: 3, model: "RBO INNOVA", plate: "NBT 9619", num: "9619" },
+      { row: 6, col: 4, model: "WO DMAX", plate: "NBS 3865", num: "3865" },
+      { row: 6, col: 5, model: "WO DMAX", plate: "NBS 3867", num: "3867" },
+      { row: 6, col: 6, model: "CAB/BO VIOS", plate: "NBD 7169", num: "7169" },
+      { row: 7, col: 1, model: "954 XQH", plate: "954 XQH", num: "954" },
+      { row: 7, col: 2, model: "NDX 3433", plate: "NDX 3433", num: "3433" },
+      { row: 7, col: 3, model: "NFX7245", plate: "NFX 7245", num: "7245" },
+      { row: 7, col: 4, model: "271 DNY", plate: "271 DNY", num: "271" },
+      { row: 7, col: 5, model: "NAY7557", plate: "NAY 7557", num: "7557" },
+      { row: 7, col: 6, model: "NAQ9339", plate: "NAQ 9339", num: "9339" }
+    ];
+
+    // Listen for Enter keypress
+    document.getElementById('searchInput').addEventListener('keyup', function(event) {
+      if (event.key === 'Enter') {
+        handleSearch();
+      }
+    });
+
+    function handleSearch() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      if (!query) return;
+
+      // Filter matching records
+      const matches = inventoryData.filter(item => 
+        item.num.toLowerCase().includes(query) ||
+        item.plate.toLowerCase().includes(query) ||
+        item.model.toLowerCase().includes(query)
+      );
+
+      displayResults(matches);
+    }
+
+    function displayResults(results) {
+      const modalBody = document.getElementById('modalBody');
+
+      if (results.length === 0) {
+        modalBody.innerHTML = `<div class="no-results">No matching drawers found.</div>`;
+      } else {
+        modalBody.innerHTML = results.map(item => `
+          <div class="result-item">
+            <div class="result-header">${item.model}</div>
+            <div class="result-detail"><strong>Code/Plate:</strong> ${item.plate}</div>
+            <div class="result-detail"><strong>Number:</strong> ${item.num}</div>
+            <div class="location-badge">Row ${item.row}, Column ${item.col}</div>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('resultsModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('resultsModal').classList.remove('active');
+    }
+
+    function closeModalOnOuterClick(event) {
+      if (event.target.classList.contains('modal-overlay')) {
+        closeModal();
+      }
+    }
+  </script>
+</body>
+</html>

@@ -240,10 +240,17 @@
       { row: 7, col: 6, model: "NAQ9339", plate: "NAQ 9339", num: "9339" }
     ];
 
-    // Listen for Enter keypress
+    // Listen for Enter keypress on search input
     document.getElementById('searchInput').addEventListener('keyup', function(event) {
       if (event.key === 'Enter') {
         handleSearch();
+      }
+    });
+
+    // Listen globally for ESC key to close modal
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeModal();
       }
     });
 
@@ -251,7 +258,6 @@
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       if (!query) return;
 
-      // Filter matching records
       const matches = inventoryData.filter(item => 
         item.num.toLowerCase().includes(query) ||
         item.plate.toLowerCase().includes(query) ||

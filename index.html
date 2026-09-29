@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Drawer Locator Search</title>
+  <title>Key Drawer & Card Slot Finder</title>
   <style>
     * {
       box-sizing: border-box;
@@ -13,8 +13,8 @@
     }
 
     body {
-      background-color: #121212;
-      color: #e0e0e0;
+      background-color: #0d1117;
+      color: #e6edf3;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -25,14 +25,21 @@
 
     .search-container {
       width: 100%;
-      max-width: 500px;
+      max-width: 540px;
       text-align: center;
     }
 
     h1 {
       font-size: 1.8rem;
-      margin-bottom: 20px;
+      margin-bottom: 8px;
       color: #ffffff;
+      font-weight: 700;
+    }
+
+    p.subtitle {
+      font-size: 0.9rem;
+      color: #8b949e;
+      margin-bottom: 24px;
     }
 
     .search-box {
@@ -44,32 +51,33 @@
       flex: 1;
       padding: 14px 18px;
       font-size: 1rem;
-      border: 1px solid #333;
+      border: 1px solid #30363d;
       border-radius: 8px;
-      background-color: #1e1e1e;
+      background-color: #161b22;
       color: #fff;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
 
     input[type="text"]:focus {
-      border-color: #00e676;
+      border-color: #2ea043;
+      box-shadow: 0 0 0 3px rgba(46, 160, 67, 0.2);
     }
 
     button {
       padding: 14px 24px;
       font-size: 1rem;
       font-weight: 600;
-      background-color: #00e676;
-      color: #121212;
+      background-color: #238636;
+      color: #ffffff;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background-color 0.2s;
     }
 
     button:hover {
-      background-color: #00c853;
+      background-color: #2ea043;
     }
 
     /* Modal Styling */
@@ -79,14 +87,16 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(1, 4, 9, 0.82);
+      backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
       visibility: hidden;
-      transition: all 0.25s ease;
+      transition: all 0.2s ease;
       padding: 20px;
+      z-index: 100;
     }
 
     .modal-overlay.active {
@@ -95,13 +105,15 @@
     }
 
     .modal-content {
-      background: #1e1e1e;
+      background: #161b22;
       border-radius: 12px;
       width: 100%;
-      max-width: 480px;
+      max-width: 500px;
+      max-height: 85vh;
+      overflow-y: auto;
       padding: 24px;
-      border: 1px solid #333;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid #30363d;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
       position: relative;
     }
 
@@ -110,32 +122,35 @@
       top: 16px;
       right: 16px;
       background: transparent;
-      color: #aaa;
+      color: #8b949e;
       font-size: 1.5rem;
       border: none;
       cursor: pointer;
       padding: 0;
+      line-height: 1;
     }
 
     .close-btn:hover {
-      color: #fff;
+      color: #ffffff;
       background: transparent;
     }
 
     .modal-title {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       margin-bottom: 16px;
-      color: #00e676;
-      border-bottom: 1px solid #333;
+      color: #3fb950;
+      border-bottom: 1px solid #30363d;
       padding-bottom: 10px;
+      font-weight: 600;
     }
 
     .result-item {
-      background: #2a2a2a;
+      background: #0d1117;
       border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 12px;
-      border-left: 4px solid #00e676;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1px solid #30363d;
+      border-left: 4px solid #3fb950;
     }
 
     .result-item:last-child {
@@ -143,48 +158,67 @@
     }
 
     .result-header {
-      font-weight: bold;
-      font-size: 1.1rem;
-      color: #fff;
-      margin-bottom: 6px;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: #ffffff;
+      margin-bottom: 8px;
     }
 
     .result-detail {
       font-size: 0.95rem;
-      color: #bbb;
-      margin-bottom: 4px;
+      color: #c9d1d9;
+      margin-bottom: 6px;
     }
 
-    .location-badge {
-      display: inline-block;
-      margin-top: 6px;
-      padding: 4px 10px;
-      background: #00e676;
-      color: #121212;
-      font-weight: bold;
+    .badges-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-weight: 600;
       font-size: 0.85rem;
-      border-radius: 4px;
+      border-radius: 6px;
+    }
+
+    .drawer-badge {
+      background: rgba(56, 139, 253, 0.15);
+      color: #58a6ff;
+      border: 1px solid rgba(56, 139, 253, 0.3);
+    }
+
+    .card-badge {
+      background: rgba(63, 185, 80, 0.15);
+      color: #3fb950;
+      border: 1px solid rgba(63, 185, 80, 0.3);
     }
 
     .no-results {
-      color: #ff5252;
+      color: #f85149;
       text-align: center;
-      padding: 20px 0;
-      font-size: 1.1rem;
+      padding: 24px 0;
+      font-size: 1.05rem;
     }
   </style>
 </head>
 <body>
 
   <div class="search-container">
-    <h1>Drawer Inventory Search</h1>
+    <h1>Key & Card Slot Locator</h1>
+    <p class="subtitle">Search by vehicle plate, tag number, or model</p>
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="Enter number, plate, or model..." autofocus>
       <button onclick="handleSearch()">Search</button>
     </div>
   </div>
 
-  <!-- Modal -->
+  <!-- Modal overlay for search output -->
   <div class="modal-overlay" id="resultsModal" onclick="closeModalOnOuterClick(event)">
     <div class="modal-content">
       <button class="close-btn" onclick="closeModal()">&times;</button>
@@ -194,60 +228,73 @@
   </div>
 
   <script>
-    // Embedded drawer inventory database
+    // Inventory records with Key Drawer location & Card Slot location
     const inventoryData = [
-      { row: 1, col: 1, model: "FLEET HLX", plate: "NJE 3162", num: "3162" },
-      { row: 1, col: 2, model: "MSD HLX/CNQST", plate: "NJE 3347", num: "3347" },
-      { row: 1, col: 3, model: "WS HLX", plate: "NJE 3345", num: "3345" },
-      { row: 1, col: 4, model: "WS HLX", plate: "NJE 3342", num: "3342" },
-      { row: 1, col: 5, model: "NBO/WS HLX", plate: "NJE 3346", num: "3346" },
-      { row: 1, col: 6, model: "NETWORK HLX", plate: "NJE 3428", num: "3428" },
-      { row: 2, col: 1, model: "TS HLX", plate: "NJE 3340", num: "3340" },
-      { row: 2, col: 2, model: "WW HLX", plate: "NJE 3344", num: "3344" },
-      { row: 2, col: 3, model: "WW VIOS", plate: "NJE 3279", num: "3279" },
-      { row: 2, col: 4, model: "NETWROK VIOS", plate: "NJE 3277", num: "3277" },
-      { row: 2, col: 5, model: "SAFETY VIOS", plate: "NJE 3278", num: "3278" },
-      { row: 2, col: 6, model: "NBD VIOS", plate: "NJE 3424", num: "3424" },
-      { row: 3, col: 1, model: "KAM/BO VIOS", plate: "NJE 3426", num: "3426" },
-      { row: 3, col: 2, model: "BIN/BO VIOS", plate: "NJE 3165", num: "3165" },
-      { row: 3, col: 3, model: "CAB/BO VIOS", plate: "NJE 3425", num: "3425" },
-      { row: 3, col: 4, model: "SRBW/BO VIOS", plate: "NJE 3316", num: "3316" },
-      { row: 3, col: 5, model: "SRC/BO VIOS", plate: "NJE 3422", num: "3422" },
-      { row: 3, col: 6, model: "LAB AVANZA", plate: "NJE 3166", num: "3166" },
-      { row: 4, col: 1, model: "FLEET AVANZA", plate: "NJE 3171", num: "3171" },
-      { row: 4, col: 2, model: "PROJECT AVANZA", plate: "NJE 3172", num: "3172" },
-      { row: 4, col: 3, model: "BIN/BO AVANZA", plate: "NJE 3275", num: "3275" },
-      { row: 4, col: 4, model: "CAB/BO AVANZA", plate: "NJE 3317", num: "3317" },
-      { row: 4, col: 5, model: "SRBW/BO AVANZA", plate: "NJE 3274", num: "3274" },
-      { row: 4, col: 6, model: "SRC/BO AVANZA", plate: "NJE 3167", num: "3167" },
-      { row: 5, col: 1, model: "SRC/BO VIOS", plate: "NDG 4614", num: "4614" },
-      { row: 5, col: 2, model: "RHEA BRV", plate: "NIB 7746", num: "7746" },
-      { row: 5, col: 3, model: "PROJECT DMAX", plate: "NAU 9350", num: "9350" },
-      { row: 5, col: 4, model: "PROJECT DMAX", plate: "NAS 9745", num: "9745" },
-      { row: 5, col: 5, model: "FLEET DMAX", plate: "NAS 9742", num: "9742" },
-      { row: 5, col: 6, model: "MSD DMAX", plate: "NAS 9743", num: "9743" },
-      { row: 6, col: 1, model: "RAM/BO VIOS", plate: "NBV 4813", num: "4813" },
-      { row: 6, col: 2, model: "DIR/BO VIOS", plate: "NAP 9321", num: "9321" },
-      { row: 6, col: 3, model: "RBO INNOVA", plate: "NBT 9619", num: "9619" },
-      { row: 6, col: 4, model: "WO DMAX", plate: "NBS 3865", num: "3865" },
-      { row: 6, col: 5, model: "WO DMAX", plate: "NBS 3867", num: "3867" },
-      { row: 6, col: 6, model: "CAB/BO VIOS", plate: "NBD 7169", num: "7169" },
-      { row: 7, col: 1, model: "954 XQH", plate: "954 XQH", num: "954" },
-      { row: 7, col: 2, model: "NDX 3433", plate: "NDX 3433", num: "3433" },
-      { row: 7, col: 3, model: "NFX7245", plate: "NFX 7245", num: "7245" },
-      { row: 7, col: 4, model: "271 DNY", plate: "271 DNY", num: "271" },
-      { row: 7, col: 5, model: "NAY7557", plate: "NAY 7557", num: "7557" },
-      { row: 7, col: 6, model: "NAQ9339", plate: "NAQ 9339", num: "9339" }
+      // Row 1
+      { drawerRow: 1, drawerCol: 1, cardRow: 1, cardCol: 1, model: "FLEET HLX", plate: "NJE 3162", num: "3162" },
+      { drawerRow: 1, drawerCol: 2, cardRow: 1, cardCol: 2, model: "MSD HLX/CNQST", plate: "NJE 3347", num: "3347" },
+      { drawerRow: 1, drawerCol: 3, cardRow: 1, cardCol: 3, model: "WS HLX", plate: "NJE 3345", num: "3345" },
+      { drawerRow: 1, drawerCol: 4, cardRow: 2, cardCol: 1, model: "WS HLX", plate: "NJE 3342", num: "3342" },
+      { drawerRow: 1, drawerCol: 5, cardRow: 1, cardCol: 4, model: "NBO/WS HLX", plate: "NJE 3346", num: "3346" },
+      { drawerRow: 1, drawerCol: 6, cardRow: 2, cardCol: 2, model: "NETWORK HLX", plate: "NJE 3428", num: "3428" },
+
+      // Row 2
+      { drawerRow: 2, drawerCol: 1, cardRow: 2, cardCol: 3, model: "TS HLX", plate: "NJE 3340", num: "3340" },
+      { drawerRow: 2, drawerCol: 2, cardRow: 2, cardCol: 4, model: "WW HLX", plate: "NJE 3344", num: "3344" },
+      { drawerRow: 2, drawerCol: 3, cardRow: 3, cardCol: 1, model: "WW VIOS", plate: "NJE 3279", num: "3279" },
+      { drawerRow: 2, drawerCol: 4, cardRow: 3, cardCol: 2, model: "NETWROK VIOS", plate: "NJE 3277", num: "3277" },
+      { drawerRow: 2, drawerCol: 5, cardRow: 3, cardCol: 3, model: "SAFETY VIOS", plate: "NJE 3278", num: "3278" },
+      { drawerRow: 2, drawerCol: 6, cardRow: 3, cardCol: 4, model: "NBD VIOS", plate: "NJE 3424", num: "3424" },
+
+      // Row 3
+      { drawerRow: 3, drawerCol: 1, cardRow: 4, cardCol: 1, model: "KAM/BO VIOS", plate: "NJE 3426", num: "3426" },
+      { drawerRow: 3, drawerCol: 2, cardRow: 4, cardCol: 2, model: "BIN/BO VIOS", plate: "NJE 3165", num: "3165" },
+      { drawerRow: 3, drawerCol: 3, cardRow: 4, cardCol: 3, model: "CAB/BO VIOS", plate: "NJE 3425", num: "3425" },
+      { drawerRow: 3, drawerCol: 4, cardRow: 4, cardCol: 4, model: "SRBW/BO VIOS", plate: "NJE 3316", num: "3316" },
+      { drawerRow: 3, drawerCol: 5, cardRow: 1, cardCol: 5, model: "SRC/BO VIOS", plate: "NJE 3422", num: "3422" },
+      { drawerRow: 3, drawerCol: 6, cardRow: 1, cardCol: 6, model: "LAB AVANZA", plate: "NJE 3166", num: "3166" },
+
+      // Row 4
+      { drawerRow: 4, drawerCol: 1, cardRow: 1, cardCol: 7, model: "FLEET AVANZA", plate: "NJE 3171", num: "3171" },
+      { drawerRow: 4, drawerCol: 2, cardRow: 1, cardCol: 8, model: "PROJECT AVANZA", plate: "NJE 3172", num: "3172" },
+      { drawerRow: 4, drawerCol: 3, cardRow: 2, cardCol: 5, model: "BIN/BO AVANZA", plate: "NJE 3275", num: "3275" },
+      { drawerRow: 4, drawerCol: 4, cardRow: 2, cardCol: 6, model: "CAB/BO AVANZA", plate: "NJE 3317", num: "3317" },
+      { drawerRow: 4, drawerCol: 5, cardRow: 2, cardCol: 7, model: "SRBW/BO AVANZA", plate: "NJE 3274", num: "3274" },
+      { drawerRow: 4, drawerCol: 6, cardRow: null, cardCol: null, model: "SRC/BO AVANZA", plate: "NJE 3167", num: "3167" },
+
+      // Row 5
+      { drawerRow: 5, drawerCol: 1, cardRow: 3, cardCol: 5, model: "SRC/BO VIOS", plate: "NDG 4614", num: "4614" },
+      { drawerRow: 5, drawerCol: 2, cardRow: 3, cardCol: 6, model: "RHEA BRV", plate: "NIB 7746", num: "7746" },
+      { drawerRow: 5, drawerCol: 3, cardRow: 3, cardCol: 7, model: "PROJECT DMAX", plate: "NAU 9350", num: "9350" },
+      { drawerRow: 5, drawerCol: 4, cardRow: 3, cardCol: 8, model: "PROJECT DMAX", plate: "NAS 9745", num: "9745" },
+      { drawerRow: 5, drawerCol: 5, cardRow: 4, cardCol: 5, model: "FLEET DMAX", plate: "NAS 9742", num: "9742" },
+      { drawerRow: 5, drawerCol: 6, cardRow: 4, cardCol: 6, model: "MSD DMAX", plate: "NAS 9743", num: "9743" },
+
+      // Row 6
+      { drawerRow: 6, drawerCol: 1, cardRow: 4, cardCol: 7, model: "RAM/BO VIOS", plate: "NBV 4813", num: "4813" },
+      { drawerRow: 6, drawerCol: 2, cardRow: 4, cardCol: 8, model: "DIR/BO VIOS", plate: "NAP 9321", num: "9321" },
+      { drawerRow: 6, drawerCol: 3, cardRow: 5, cardCol: 1, model: "RBO INNOVA", plate: "NBT 9619", num: "9619" },
+      { drawerRow: 6, drawerCol: 4, cardRow: 5, cardCol: 2, model: "WO DMAX", plate: "NBS 3865", num: "3865" },
+      { drawerRow: 6, drawerCol: 5, cardRow: 5, cardCol: 3, model: "WO DMAX", plate: "NBS 3867", num: "3867" },
+      { drawerRow: 6, drawerCol: 6, cardRow: 5, cardCol: 4, model: "CAB/BO VIOS", plate: "NBD 7169", num: "7169" },
+
+      // Row 7 (Handwritten / Misc)
+      { drawerRow: 7, drawerCol: 1, cardRow: null, cardCol: null, model: "954 XQH", plate: "954 XQH", num: "954" },
+      { drawerRow: 7, drawerCol: 2, cardRow: null, cardCol: null, model: "NDX 3433", plate: "NDX 3433", num: "3433" },
+      { drawerRow: 7, drawerCol: 3, cardRow: null, cardCol: null, model: "NFX7245", plate: "NFX 7245", num: "7245" },
+      { drawerRow: 7, drawerCol: 4, cardRow: null, cardCol: null, model: "271 DNY", plate: "271 DNY", num: "271" },
+      { drawerRow: 7, drawerCol: 5, cardRow: null, cardCol: null, model: "NAY7557", plate: "NAY 7557", num: "7557" },
+      { drawerRow: 7, drawerCol: 6, cardRow: null, cardCol: null, model: "NAQ9339", plate: "NAQ 9339", num: "9339" }
     ];
 
-    // Listen for Enter keypress on search input
+    // Trigger search on Enter keypress
     document.getElementById('searchInput').addEventListener('keyup', function(event) {
       if (event.key === 'Enter') {
         handleSearch();
       }
     });
 
-    // Listen globally for ESC key to close modal
+    // Dismiss modal on ESC key
     document.addEventListener('keydown', function(event) {
       if (event.key === 'Escape') {
         closeModal();
@@ -271,16 +318,30 @@
       const modalBody = document.getElementById('modalBody');
 
       if (results.length === 0) {
-        modalBody.innerHTML = `<div class="no-results">No matching drawers found.</div>`;
+        modalBody.innerHTML = `<div class="no-results">No matching record found.</div>`;
       } else {
-        modalBody.innerHTML = results.map(item => `
-          <div class="result-item">
-            <div class="result-header">${item.model}</div>
-            <div class="result-detail"><strong>Code/Plate:</strong> ${item.plate}</div>
-            <div class="result-detail"><strong>Number:</strong> ${item.num}</div>
-            <div class="location-badge">Row ${item.row}, Column ${item.col}</div>
-          </div>
-        `).join('');
+        modalBody.innerHTML = results.map(item => {
+          const cardSlotText = (item.cardRow && item.cardCol) 
+            ? `Row ${item.cardRow}, Col ${item.cardCol}` 
+            : 'Unassigned';
+
+          return `
+            <div class="result-item">
+              <div class="result-header">${item.model}</div>
+              <div class="result-detail"><strong>Plate / Tag:</strong> ${item.plate}</div>
+              <div class="result-detail"><strong>Number ID:</strong> ${item.num}</div>
+              
+              <div class="badges-container">
+                <div class="badge drawer-badge">
+                  🗄️ Drawer: Row ${item.drawerRow}, Col ${item.drawerCol}
+                </div>
+                <div class="badge card-badge">
+                  💳 Card Slot: ${cardSlotText}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
       }
 
       document.getElementById('resultsModal').classList.add('active');

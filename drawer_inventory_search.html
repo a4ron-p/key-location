@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Key Drawer & Card Slot Finder</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #0d1117;
+      color: #e6edf3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .search-container {
+      width: 100%;
+      max-width: 540px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    p.subtitle {
+      font-size: 0.9rem;
+      color: #8b949e;
+      margin-bottom: 24px;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 14px 18px;
+      font-size: 1rem;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      background-color: #161b22;
+      color: #fff;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #2ea043;
+      box-shadow: 0 0 0 3px rgba(46, 160, 67, 0.2);
+    }
+
+    button {
+      padding: 14px 24px;
+      font-size: 1rem;
+      font-weight: 600;
+      background-color: #238636;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #2ea043;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(1, 4, 9, 0.82);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: #161b22;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 24px;
+      border: 1px solid #30363d;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: transparent;
+      color: #8b949e;
+      font-size: 1.5rem;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .close-btn:hover {
+      color: #ffffff;
+      background: transparent;
+    }
+
+    .modal-title {
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+      color: #3fb950;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .result-item {
+      background: #0d1117;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1px solid #30363d;
+      border-left: 4px solid #3fb950;
+    }
+
+    .result-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .result-header {
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .result-detail {
+      font-size: 0.95rem;
+      color: #c9d1d9;
+      margin-bottom: 6px;
+    }
+
+    .badges-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border-radius: 6px;
+    }
+
+    .drawer-badge {
+      background: rgba(56, 139, 253, 0.15);
+      color: #58a6ff;
+      border: 1px solid rgba(56, 139, 253, 0.3);
+    }
+
+    .card-badge {
+      background: rgba(63, 185, 80, 0.15);
+      color: #3fb950;
+      border: 1px solid rgba(63, 185, 80, 0.3);
+    }
+
+    .no-results {
+      color: #f85149;
+      text-align: center;
+      padding: 24px 0;
+      font-size: 1.05rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="search-container">
+    <h1>Key & Card Slot Locator</h1>
+    <p class="subtitle">Search by vehicle plate, tag number, or model</p>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Enter number, plate, or model..." autofocus>
+      <button onclick="handleSearch()">Search</button>
+    </div>
+  </div>
+
+  <!-- Modal overlay for search output -->
+  <div class="modal-overlay" id="resultsModal" onclick="closeModalOnOuterClick(event)">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal()">&times;</button>
+      <div class="modal-title">Search Results</div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // Inventory records with Key Drawer location & Card Slot location
+    const inventoryData = [
+      // Row 1
+      { drawerRow: 1, drawerCol: 1, cardRow: 1, cardCol: 1, model: "FLEET HLX", plate: "NJE 3162", num: "3162" },
+      { drawerRow: 1, drawerCol: 2, cardRow: 1, cardCol: 2, model: "MSD HLX/CNQST", plate: "NJE 3347", num: "3347" },
+      { drawerRow: 1, drawerCol: 3, cardRow: 1, cardCol: 3, model: "WS HLX", plate: "NJE 3345", num: "3345" },
+      { drawerRow: 1, drawerCol: 4, cardRow: 2, cardCol: 1, model: "WS HLX", plate: "NJE 3342", num: "3342" },
+      { drawerRow: 1, drawerCol: 5, cardRow: 1, cardCol: 4, model: "NBO/WS HLX", plate: "NJE 3346", num: "3346" },
+      { drawerRow: 1, drawerCol: 6, cardRow: 2, cardCol: 2, model: "NETWORK HLX", plate: "NJE 3428", num: "3428" },
+
+      // Row 2
+      { drawerRow: 2, drawerCol: 1, cardRow: 2, cardCol: 3, model: "TS HLX", plate: "NJE 3340", num: "3340" },
+      { drawerRow: 2, drawerCol: 2, cardRow: 2, cardCol: 4, model: "WW HLX", plate: "NJE 3344", num: "3344" },
+      { drawerRow: 2, drawerCol: 3, cardRow: 3, cardCol: 1, model: "WW VIOS", plate: "NJE 3279", num: "3279" },
+      { drawerRow: 2, drawerCol: 4, cardRow: 3, cardCol: 2, model: "NETWROK VIOS", plate: "NJE 3277", num: "3277" },
+      { drawerRow: 2, drawerCol: 5, cardRow: 3, cardCol: 3, model: "SAFETY VIOS", plate: "NJE 3278", num: "3278" },
+      { drawerRow: 2, drawerCol: 6, cardRow: 3, cardCol: 4, model: "NBD VIOS", plate: "NJE 3424", num: "3424" },
+
+      // Row 3
+      { drawerRow: 3, drawerCol: 1, cardRow: 4, cardCol: 1, model: "KAM/BO VIOS", plate: "NJE 3426", num: "3426" },
+      { drawerRow: 3, drawerCol: 2, cardRow: 4, cardCol: 2, model: "BIN/BO VIOS", plate: "NJE 3165", num: "3165" },
+      { drawerRow: 3, drawerCol: 3, cardRow: 4, cardCol: 3, model: "CAB/BO VIOS", plate: "NJE 3425", num: "3425" },
+      { drawerRow: 3, drawerCol: 4, cardRow: 4, cardCol: 4, model: "SRBW/BO VIOS", plate: "NJE 3316", num: "3316" },
+      { drawerRow: 3, drawerCol: 5, cardRow: 1, cardCol: 5, model: "SRC/BO VIOS", plate: "NJE 3422", num: "3422" },
+      { drawerRow: 3, drawerCol: 6, cardRow: 1, cardCol: 6, model: "LAB AVANZA", plate: "NJE 3166", num: "3166" },
+
+      // Row 4
+      { drawerRow: 4, drawerCol: 1, cardRow: 1, cardCol: 7, model: "FLEET AVANZA", plate: "NJE 3171", num: "3171" },
+      { drawerRow: 4, drawerCol: 2, cardRow: 1, cardCol: 8, model: "PROJECT AVANZA", plate: "NJE 3172", num: "3172" },
+      { drawerRow: 4, drawerCol: 3, cardRow: 2, cardCol: 5, model: "BIN/BO AVANZA", plate: "NJE 3275", num: "3275" },
+      { drawerRow: 4, drawerCol: 4, cardRow: 2, cardCol: 6, model: "CAB/BO AVANZA", plate: "NJE 3317", num: "3317" },
+      { drawerRow: 4, drawerCol: 5, cardRow: 2, cardCol: 7, model: "SRBW/BO AVANZA", plate: "NJE 3274", num: "3274" },
+      { drawerRow: 4, drawerCol: 6, cardRow: null, cardCol: null, model: "SRC/BO AVANZA", plate: "NJE 3167", num: "3167" },
+
+      // Row 5
+      { drawerRow: 5, drawerCol: 1, cardRow: 3, cardCol: 5, model: "SRC/BO VIOS", plate: "NDG 4614", num: "4614" },
+      { drawerRow: 5, drawerCol: 2, cardRow: 3, cardCol: 6, model: "RHEA BRV", plate: "NIB 7746", num: "7746" },
+      { drawerRow: 5, drawerCol: 3, cardRow: 3, cardCol: 7, model: "PROJECT DMAX", plate: "NAU 9350", num: "9350" },
+      { drawerRow: 5, drawerCol: 4, cardRow: 3, cardCol: 8, model: "PROJECT DMAX", plate: "NAS 9745", num: "9745" },
+      { drawerRow: 5, drawerCol: 5, cardRow: 4, cardCol: 5, model: "FLEET DMAX", plate: "NAS 9742", num: "9742" },
+      { drawerRow: 5, drawerCol: 6, cardRow: 4, cardCol: 6, model: "MSD DMAX", plate: "NAS 9743", num: "9743" },
+
+      // Row 6
+      { drawerRow: 6, drawerCol: 1, cardRow: 4, cardCol: 7, model: "RAM/BO VIOS", plate: "NBV 4813", num: "4813" },
+      { drawerRow: 6, drawerCol: 2, cardRow: 4, cardCol: 8, model: "DIR/BO VIOS", plate: "NAP 9321", num: "9321" },
+      { drawerRow: 6, drawerCol: 3, cardRow: 5, cardCol: 1, model: "RBO INNOVA", plate: "NBT 9619", num: "9619" },
+      { drawerRow: 6, drawerCol: 4, cardRow: 5, cardCol: 2, model: "WO DMAX", plate: "NBS 3865", num: "3865" },
+      { drawerRow: 6, drawerCol: 5, cardRow: 5, cardCol: 3, model: "WO DMAX", plate: "NBS 3867", num: "3867" },
+      { drawerRow: 6, drawerCol: 6, cardRow: 5, cardCol: 4, model: "CAB/BO VIOS", plate: "NBD 7169", num: "7169" },
+
+      // Row 7 (Handwritten / Misc)
+      { drawerRow: 7, drawerCol: 1, cardRow: null, cardCol: null, model: "954 XQH", plate: "954 XQH", num: "954" },
+      { drawerRow: 7, drawerCol: 2, cardRow: null, cardCol: null, model: "NDX 3433", plate: "NDX 3433", num: "3433" },
+      { drawerRow: 7, drawerCol: 3, cardRow: null, cardCol: null, model: "NFX7245", plate: "NFX 7245", num: "7245" },
+      { drawerRow: 7, drawerCol: 4, cardRow: null, cardCol: null, model: "271 DNY", plate: "271 DNY", num: "271" },
+      { drawerRow: 7, drawerCol: 5, cardRow: null, cardCol: null, model: "NAY7557", plate: "NAY 7557", num: "7557" },
+      { drawerRow: 7, drawerCol: 6, cardRow: null, cardCol: null, model: "NAQ9339", plate: "NAQ 9339", num: "9339" }
+    ];
+
+    // Trigger search on Enter keypress
+    document.getElementById('searchInput').addEventListener('keyup', function(event) {
+      if (event.key === 'Enter') {
+        handleSearch();
+      }
+    });
+
+    // Dismiss modal on ESC key
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    });
+
+    function handleSearch() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      if (!query) return;
+
+      const matches = inventoryData.filter(item => 
+        item.num.toLowerCase().includes(query) ||
+        item.plate.toLowerCase().includes(query) ||
+        item.model.toLowerCase().includes(query)
+      );
+
+      displayResults(matches);
+    }
+
+    function displayResults(results) {
+      const modalBody = document.getElementById('modalBody');
+
+      if (results.length === 0) {
+        modalBody.innerHTML = `<div class="no-results">No matching record found.</div>`;
+      } else {
+        modalBody.innerHTML = results.map(item => {
+          const cardSlotText = (item.cardRow && item.cardCol) 
+            ? `Row ${item.cardRow}, Col ${item.cardCol}` 
+            : 'Unassigned';
+
+          return `
+            <div class="result-item">
+              <div class="result-header">${item.model}</div>
+              <div class="result-detail"><strong>Plate / Tag:</strong> ${item.plate}</div>
+              <div class="result-detail"><strong>Number ID:</strong> ${item.num}</div>
+              
+              <div class="badges-container">
+                <div class="badge drawer-badge">
+                  🗄️ Drawer: Row ${item.drawerRow}, Col ${item.drawerCol}
+                </div>
+                <div class="badge card-badge">
+                  💳 Card Slot: ${cardSlotText}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('resultsModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('resultsModal').classList.remove('active');
+    }
+
+    function closeModalOnOuterClick(event) {
+      if (event.target.classList.contains('modal-overlay')) {
+        closeModal();
+      }
+    }
+  </script>
+</body>
+</html>
